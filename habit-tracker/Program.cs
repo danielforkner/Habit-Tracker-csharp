@@ -59,10 +59,10 @@ namespace habit_tracker
                     case "2":
                         InsertRecord();
                         break;
-                    // case 3:
-                    //     DeleteRecord();
-                    //     break;
-                    // case 4:
+                    case "3":
+                        DeleteRecord();
+                        break;
+                    // case "4":
                     //     UpdateRecord();
                     //     break;
                     default:
@@ -70,6 +70,40 @@ namespace habit_tracker
                         break;
                 }
             }
+        }
+
+
+        static private void DeleteRecord()
+        {
+            Console.Clear();
+            GetAllRecords();
+            string id = GetIdInput("\n\nPlease insert the id of the record you would like to delete. Type 0 to return to main menu.");
+            if (id == "0") GetUserInput();
+
+            using (var connection = new SqliteConnection(connectionString))
+            {
+                connection.Open();
+                var tableCmd = connection.CreateCommand();
+                tableCmd.CommandText = @"DELETE FROM drinking_water WHERE id=$id";
+                tableCmd.Parameters.AddWithValue("$id", id);
+
+                int rowCount = tableCmd.ExecuteNonQuery();
+                if (rowCount == 0)
+                {
+                    Console.WriteLine($"\n\nRecord with Id {id} does not exist. Enter to continue. 0 for Main Menu. \n\n");
+                    if (Console.ReadLine() == "0") GetUserInput();
+                    DeleteRecord();
+                }
+
+                Console.WriteLine($"\n\nRecord with Id {id} was successfully deleted. Enter to continue. \n\n");
+                GetUserInput();
+            }
+        }
+
+        internal static string GetIdInput(string message)
+        {
+            Console.WriteLine(message);
+            return Console.ReadLine();
         }
 
         static private void InsertRecord()
