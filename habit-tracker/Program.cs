@@ -62,9 +62,9 @@ namespace habit_tracker
                     case "3":
                         DeleteRecord();
                         break;
-                    // case "4":
-                    //     UpdateRecord();
-                    //     break;
+                    case "4":
+                        UpdateRecord();
+                        break;
                     default:
                         Console.WriteLine("\nPlease enter a valid command.\n");
                         break;
@@ -72,10 +72,41 @@ namespace habit_tracker
             }
         }
 
+        static private void UpdateRecord()
+        {
+            GetAllRecords();
+            string id = GetIdInput("\n\nPlease insert the id of the record you would like to update. Type 0 to return to main menu.");
 
+            using (var connection = new SqliteConnection(connectionString))
+            {
+                connection.Open();
+                var checkCmd = connection.CreateCommand();
+                checkCmd.CommandText = $"SELECT EXISTS(SELECT 1 FROM drinking_water WHERE Id=$id)";
+                checkCmd.Parameters.AddWithValue("$id", id);
+                int checkQuery = Convert.ToInt32(checkCmd.ExecuteScalar());
+                if (checkQuery == 0)
+                {
+                    Console.WriteLine($"\n\nRecord with Id {id} doesn't exist. Type 0 for main menu or Enter to continue. \n\n");
+                    if (Console.ReadLine() == "0") GetUserInput();
+                    connection.Close();
+                    UpdateRecord();
+                }
+
+                string date = GetDateInput("\n\nPlease insert the new date: (Format: mm-dd-yyyy). Type 0 to return to main menu.");
+                int quantity = GetNumberInput("\n\nPlease insert the new number of glasses or other measure of your choice (no decimals allowed). Type 0 to return to main menu.\n\n");
+                var tableCmd = connection.CreateCommand();
+                tableCmd.CommandText = @"UPDATE drinking_water SET date=$date, quantity=$quantity WHERE Id=$id";
+                tableCmd.Parameters.AddWithValue("$id", id);
+                tableCmd.Parameters.AddWithValue("$date", date);
+                tableCmd.Parameters.AddWithValue("$quantity", quantity);
+                int rowCount = tableCmd.ExecuteNonQuery();
+
+                Console.WriteLine($"\n\nRecord with Id {id} was successfully updated. Enter to continue. \n\n");
+                GetUserInput();
+            }
+        }
         static private void DeleteRecord()
         {
-            Console.Clear();
             GetAllRecords();
             string id = GetIdInput("\n\nPlease insert the id of the record you would like to delete. Type 0 to return to main menu.");
             if (id == "0") GetUserInput();
@@ -92,6 +123,7 @@ namespace habit_tracker
                 {
                     Console.WriteLine($"\n\nRecord with Id {id} does not exist. Enter to continue. 0 for Main Menu. \n\n");
                     if (Console.ReadLine() == "0") GetUserInput();
+                    connection.Close();
                     DeleteRecord();
                 }
 
